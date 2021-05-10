@@ -57,7 +57,6 @@ def startPairing(info):
 
 def confirmPairing(info, username, secret):
     logger.log("Confirming pairing for", info.thingName, info)
-    # Homebridge: 'nymea.ThingPairingInfo' object has no attribute 'paramValue'??
     searchSystemId = info.paramValue(gatewayThingSystemIdParamTypeId)
     for i in range(0, len(discoveredIps)):
         systemId = discoveredIps[i][2]
