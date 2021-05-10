@@ -1,0 +1,12 @@
+{
+    "title": "Homebridge",
+    "tagline": "Discover and control Homebridge devices",
+    "icon": "homebridge.png",
+    "stability": "testing",
+    "offline": true,
+    "technologies": [
+        "network"
+    ],
+    "categories": [
+    ]
+}

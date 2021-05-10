@@ -1,0 +1,114 @@
+{
+    "displayName": "Homebridge",
+    "name": "Homebridge",
+    "id": "0a7e8e98-1f96-443e-a0d7-09bdafefc4bc",
+    "vendors": [
+        {
+            "id": "ea1bd126-408b-4859-926b-a222aa0944c7",
+            "displayName": "Homebridge",
+            "name": "homebridge",
+            "thingClasses": [
+                {
+                    "id": "8f287b4a-e7a9-4179-b028-eb68835d4f47",
+                    "name": "gateway",
+                    "displayName": "Homebridge Gateway",
+                    "createMethods": ["discovery"],
+                    "interfaces": ["gateway", "connectable"],
+                    "setupMethod": "UserAndPassword",
+                    "paramTypes": [
+                        {
+                            "id": "ca9dbd91-bf15-44be-a2c9-4e28bae4f688",
+                            "name": "systemId",
+                            "displayName": "System ID",
+                            "type": "QString",
+                            "readOnly": true
+                        }
+                    ],
+                    "settingsTypes": [
+
+                    ],
+                    "stateTypes": [
+                        {
+                            "id": "49b789fa-f091-437d-8e4e-3b2c4be60a55",
+                            "name": "connected",
+                            "displayName": "Connected",
+                            "displayNameEvent": "Connected changed",
+                            "defaultValue": false,
+                            "type": "bool",
+                            "cached": false
+                        },
+                        {
+                            "id": "ec3e57c4-79aa-4c48-87af-ad834e2c9b97",
+                            "name": "loggedIn",
+                            "displayName": "Logged in",
+                            "displayNameEvent": "Logged in or out",
+                            "type": "bool",
+                            "defaultValue": false
+                        },
+                        {
+                            "id": "844ff8a0-66b2-49a2-93bc-2a2dfb34e23e",
+                            "name": "url",
+                            "displayName": "Device Address",
+                            "displayNameEvent": "Device IP changed",
+                            "defaultValue": "0.0.0.0",
+                            "type" : "QString"
+                        }
+                    ],
+                    "actionTypes": [
+
+                    ]
+                },
+                {
+                    "id": "aa9face9-7efc-4ede-b0c8-e8971ccbefa9",
+                    "name": "device",
+                    "displayName": "Homebridge Device",
+                    "createMethods": ["discovery"],
+                    "interfaces": ["power"],
+                    "paramTypes": [
+                        {
+                            "id": "cd5f8daf-7abf-4950-a129-d239c6bcf50d",
+                            "name": "deviceId",
+                            "displayName": "Device ID",
+                            "type" : "QString",
+                            "readOnly": true
+                        },
+                        {
+                            "id": "d376909b-67c8-4df5-97c0-d18f028b0af9",
+                            "name": "type",
+                            "displayName": "Device type",
+                            "type" : "QString",
+                            "readOnly": true
+                        }
+                    ],
+                    "settingsTypes": [
+
+                    ],
+                    "stateTypes": [
+                        {
+                            "id": "9178479a-444c-4c55-9726-fd3ca5b73fa1",
+                            "name": "connected",
+                            "displayName": "Connected",
+                            "displayNameEvent": "Connected changed",
+                            "defaultValue": false,
+                            "type": "bool",
+                            "cached": false
+                        },
+                        {
+                            "displayName": "Power",
+                            "id": "50cbd41c-6f28-4b5a-ba07-3d6fe316fc18",
+                            "name": "power",
+                            "displayNameEvent": "Power changed",
+                            "displayNameAction": "Set power",
+                            "type": "bool",
+                            "defaultValue": false,
+                            "writable": true
+                        }
+                    ],
+                    "actionTypes": [
+
+                    ]
+                }
+            ]
+        }
+    ]
+}
