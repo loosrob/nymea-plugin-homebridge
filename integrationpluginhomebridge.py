@@ -4,7 +4,6 @@ import threading
 import json
 import requests
 import random
-from xml.sax.saxutils import unescape
 from zeroconf import IPVersion, ServiceBrowser, ServiceInfo, Zeroconf
 from typing import Callable, List
 
