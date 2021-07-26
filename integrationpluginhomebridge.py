@@ -88,7 +88,7 @@ def checkToken(gateway, deviceIp):
     if rr.status_code == 401:
         # token expired, so we will renew it
         logger.log("Token expired, renewing")
-        loginState, token, tokentype = getToken(gateway.thingId, deviceIp, username, secret)
+        loginState, token, tokentype = getToken(gateway.id, deviceIp, username, secret)
     elif rr.status_code == requests.codes.ok:
         # token still valid
         logger.log("Token still valid")
