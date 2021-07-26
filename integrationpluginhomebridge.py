@@ -61,38 +61,44 @@ def confirmPairing(info, username, secret):
         systemId = discoveredIps[i][2]
         if systemId == searchSystemId:
             deviceIp = discoveredIps[i][0]
-    loginState, token, tokentype = getToken(deviceIp, username, secret)
+    loginState, token, tokentype = getToken(info.thingId, deviceIp, username, secret)
     if loginState == True:
-        pluginStorage().beginGroup(info.thingId)
-        pluginStorage().setValue("username", username)
-        pluginStorage().setValue("password", secret)
-        pluginStorage().setValue("token", token)
-        pluginStorage().setValue("tokentype", tokentype)
-        pluginStorage().endGroup()
         info.finish(nymea.ThingErrorNoError)
     else:
         info.finish(nymea.ThingErrorAuthenticationFailure, "Error logging in!")
 
-def checkToken(deviceIp, username, secret, token, tokentype):
-    # check token validity (unless token = None)
-    if token != None and tokentype != None:
-        authheader = tokentype + ' ' + token
-        headers = {'Authorization': authheader, 'Accept': '*/*'}
-        rUrl = 'http://' + deviceIp + ':8581/api/auth/check'
-        rr = requests.get(rUrl, headers=headers)
-        logger.log("token check, status code: " + str(rr.status_code))
-        if rr.status_code == 401:
-            # token expired, so we will renew it
-            loginState, token, tokentype = getToken(deviceIp, username, secret)
-        elif rr.status_code == requests.codes.ok:
-            # token still valid
-            loginState = True
-        else:
-            loginState = False
+def checkToken(gateway, deviceIp):
+    # obtain login info & current token for gateway
+    pluginStorage().beginGroup(gateway.id)
+    username = pluginStorage().value("username")
+    secret = pluginStorage().value("password")
+    token = pluginStorage().value("token")
+    tokentype = pluginStorage().value("tokentype")
+    pluginStorage().endGroup()
+    if deviceIp == None:
+        deviceIp = gateway.stateValue(gatewayUrlStateTypeId)
+    
+    # check token validity
+    logger.log("Checking token validity")
+    authheader = tokentype + ' ' + token
+    headers = {'Authorization': authheader, 'Accept': '*/*'}
+    rUrl = 'http://' + deviceIp + ':8581/api/auth/check'
+    rr = requests.get(rUrl, headers=headers)
+    logger.log("token check, status code: " + str(rr.status_code))
+    if rr.status_code == 401:
+        # token expired, so we will renew it
+        logger.log("Token expired, renewing")
+        loginState, token, tokentype = getToken(gateway.thingId, username, secret)
+    elif rr.status_code == requests.codes.ok:
+        # token still valid
+        logger.log("Token still valid")
+        loginState = True
+    else:
+        logger.log("Other state?")
+        loginState = False
     return loginState, token, tokentype
 
-def getToken(deviceIp, username, secret):
-    # to do: remove checkToken & add expiry check to getToken + renew if near or beyond expiration?
+def getToken(gatewayId, deviceIp, username, secret):
     rUrl = 'http://' + deviceIp + ':8581/api/auth/login'
     headers = {'Content-Type': 'application/json', 'Accept': '*/*'}
     body = '{"username":"' + username + '","password":"' + secret + '","otp":"string"}'
@@ -103,10 +109,12 @@ def getToken(deviceIp, username, secret):
         token = responseJson['access_token']
         tokentype = responseJson['token_type']
         validity = int(responseJson['expires_in'])
-        # expires_in = 28800 = 8h?
-        #currenttime = time()
-        #expirationtime = time() + validity - 1800
-        #logger.log("ctime currenttime", time.ctime(currenttime), "ctime expirationtime", time.ctime(expirationtime))
+        pluginStorage().beginGroup(gatewayId)
+        pluginStorage().setValue("username", username)
+        pluginStorage().setValue("password", secret)
+        pluginStorage().setValue("token", token)
+        pluginStorage().setValue("tokentype", tokentype)
+        pluginStorage().endGroup()
     else:
         loginState = False
         token = None
@@ -125,18 +133,15 @@ def setupThing(info):
         if deviceIp != None:
             info.thing.setStateValue(gatewayUrlStateTypeId, deviceIp)
             info.thing.setStateValue(gatewayConnectedStateTypeId, True)
-            pluginStorage().beginGroup(info.thing.id)
-            username = pluginStorage().value("username")
-            secret = pluginStorage().value("password")
-            token = pluginStorage().value("token")
-            tokentype = pluginStorage().value("tokentype")
-            pluginStorage().endGroup()
-            loginState, token, tokentype = checkToken(deviceIp, username, secret, token, tokentype)
+
+            #pluginStorage().beginGroup(info.thing.id)
+            #username = pluginStorage().value("username")
+            #secret = pluginStorage().value("password")
+            #token = pluginStorage().value("token")
+            #tokentype = pluginStorage().value("tokentype")
+            #pluginStorage().endGroup()
+            loginState, token, tokentype = checkToken(info.thing, deviceIp)
             if loginState == True:
-                pluginStorage().beginGroup(info.thing.id)
-                pluginStorage().setValue("token", token)
-                pluginStorage().setValue("tokentype", tokentype)
-                pluginStorage().endGroup()
                 info.thing.setStateValue(gatewayLoggedInStateTypeId, True)
                 pollGateway(info.thing)
                 info.finish(nymea.ThingErrorNoError)
@@ -215,13 +220,13 @@ def discoverThings(info):
                 gateway = possibleGateway
                 deviceIp = gateway.stateValue(gatewayUrlStateTypeId)
                 logger.log("Yes, %s with IP address %s is a gateway, looking for devices." % (gateway.name, deviceIp))
-                pluginStorage().beginGroup(gateway.id)
-                username = pluginStorage().value("username")
-                secret = pluginStorage().value("password")
-                token = pluginStorage().value("token")
-                tokentype = pluginStorage().value("tokentype")
-                pluginStorage().endGroup()
-                loginState, token, tokentype = checkToken(deviceIp, username, secret, token, tokentype)
+                #pluginStorage().beginGroup(gateway.id)
+                #username = pluginStorage().value("username")
+                #secret = pluginStorage().value("password")
+                #token = pluginStorage().value("token")
+                #tokentype = pluginStorage().value("tokentype")
+                #pluginStorage().endGroup()
+                loginState, token, tokentype = checkToken(gateway, deviceIp)
                 if loginState == True:
                     rUrl = 'http://' + deviceIp + ':8581/api/accessories'
                     authheader = tokentype + ' ' + token
@@ -331,13 +336,13 @@ def pollGateway(thing):
     if thing.thingClassId == gatewayThingClassId:
         logger.log("polling gateway", thing.name)
         deviceIp = thing.stateValue(gatewayUrlStateTypeId)
-        pluginStorage().beginGroup(thing.id)
-        username = pluginStorage().value("username")
-        secret = pluginStorage().value("password")
-        token = pluginStorage().value("token")
-        tokentype = pluginStorage().value("tokentype")
-        pluginStorage().endGroup()
-        loginState, token, tokentype = checkToken(deviceIp, username, secret, token, tokentype)
+        #pluginStorage().beginGroup(thing.id)
+        #username = pluginStorage().value("username")
+        #secret = pluginStorage().value("password")
+        #token = pluginStorage().value("token")
+        #tokentype = pluginStorage().value("tokentype")
+        #pluginStorage().endGroup()
+        loginState, token, tokentype = checkToken(thing, deviceIp)
         if loginState == True:
             thing.setStateValue(gatewayLoggedInStateTypeId, True)
         else:
@@ -350,23 +355,28 @@ def pollGateway(thing):
             if possibleParent.id == thing.parentId:
                 parentGateway = possibleParent
         if parentGateway.stateValue(gatewayLoggedInStateTypeId) == True:
-            thing.setStateValue(deviceConnectedStateTypeId, True)
+            #thing.setStateValue(deviceConnectedStateTypeId, True)
             deviceIp = parentGateway.stateValue(gatewayUrlStateTypeId)
-            pluginStorage().beginGroup(parentGateway.id)
-            token = pluginStorage().value("token")
-            tokentype = pluginStorage().value("tokentype")
-            pluginStorage().endGroup()
-            deviceId = thing.paramValue(deviceThingDeviceIdParamTypeId)
-            rUrl = 'http://' + deviceIp + ':8581/api/accessories/' + deviceId
-            authheader = tokentype + ' ' + token
-            headers = {'Authorization': authheader, 'Accept': '*/*'}
-            rr = requests.get(rUrl, headers=headers)
-            responseJson = rr.json()
-            serviceCharacteristics = responseJson['serviceCharacteristics']
-            for i in range(0, len(serviceCharacteristics)):
-                if serviceCharacteristics[i]['type'] == 'Active':
-                    power = int(serviceCharacteristics[i]['value'])
-                    thing.setStateValue(devicePowerStateTypeId, power)
+            #pluginStorage().beginGroup(parentGateway.id)
+            #token = pluginStorage().value("token")
+            #tokentype = pluginStorage().value("tokentype")
+            #pluginStorage().endGroup()
+            loginState, token, tokentype = checkToken(parentGateway, deviceIp)
+            if loginState == True:
+                thing.setStateValue(deviceConnectedStateTypeId, True)
+                deviceId = thing.paramValue(deviceThingDeviceIdParamTypeId)
+                rUrl = 'http://' + deviceIp + ':8581/api/accessories/' + deviceId
+                authheader = tokentype + ' ' + token
+                headers = {'Authorization': authheader, 'Accept': '*/*'}
+                rr = requests.get(rUrl, headers=headers)
+                responseJson = rr.json()
+                serviceCharacteristics = responseJson['serviceCharacteristics']
+                for i in range(0, len(serviceCharacteristics)):
+                    if serviceCharacteristics[i]['type'] == 'Active':
+                        power = int(serviceCharacteristics[i]['value'])
+                        thing.setStateValue(devicePowerStateTypeId, power)
+            else:
+                thing.setStateValue(deviceConnectedStateTypeId, False)
         else:
             thing.setStateValue(deviceConnectedStateTypeId, False)
 
@@ -402,10 +412,11 @@ def executeAction(info):
                 power = 1
             else:
                 power = 0
-            pluginStorage().beginGroup(parentGateway.id)
-            token = pluginStorage().value("token")
-            tokentype = pluginStorage().value("tokentype")
-            pluginStorage().endGroup()
+            #pluginStorage().beginGroup(parentGateway.id)
+            #token = pluginStorage().value("token")
+            #tokentype = pluginStorage().value("tokentype")
+            #pluginStorage().endGroup()
+            loginState, token, tokentype = checkToken(parentGateway, deviceIp)
             deviceId = info.thing.paramValue(deviceThingDeviceIdParamTypeId)
             rUrl = 'http://' + deviceIp + ':8581/api/accessories/' + deviceId
             authheader = tokentype + ' ' + token
@@ -426,7 +437,7 @@ def executeAction(info):
         logger.log("Action not yet implemented for thing")
         info.finish(nymea.ThingErrorNoError)
         return
-
+    
 def deinit():
     global pollTimer
     # If we started a poll timer, cancel it on shutdown.
