@@ -88,7 +88,7 @@ def checkToken(gateway, deviceIp):
     if rr.status_code == 401:
         # token expired, so we will renew it
         logger.log("Token expired, renewing")
-        loginState, token, tokentype = getToken(gateway.thingId, username, secret)
+        loginState, token, tokentype = getToken(gateway.thingId, deviceIp, username, secret)
     elif rr.status_code == requests.codes.ok:
         # token still valid
         logger.log("Token still valid")
@@ -133,13 +133,6 @@ def setupThing(info):
         if deviceIp != None:
             info.thing.setStateValue(gatewayUrlStateTypeId, deviceIp)
             info.thing.setStateValue(gatewayConnectedStateTypeId, True)
-
-            #pluginStorage().beginGroup(info.thing.id)
-            #username = pluginStorage().value("username")
-            #secret = pluginStorage().value("password")
-            #token = pluginStorage().value("token")
-            #tokentype = pluginStorage().value("tokentype")
-            #pluginStorage().endGroup()
             loginState, token, tokentype = checkToken(info.thing, deviceIp)
             if loginState == True:
                 info.thing.setStateValue(gatewayLoggedInStateTypeId, True)
