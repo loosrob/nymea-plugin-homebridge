@@ -149,8 +149,12 @@ def setupThing(info):
         # If no poll timer is set up yet, start it now
         logger.log("Creating polltimer")
         global pollTimer
-        pollTimer = threading.Timer(10, pollService)
-        pollTimer.start()
+        if pollTimer == None:
+            logger.log("Starting timer @ setupThing")
+            pollTimer = threading.Timer(10, pollService)
+            pollTimer.start()
+        else:
+            logger.log("Timer already exists @ setupThing")
         
         info.finish(nymea.ThingErrorNoError)
         return
@@ -329,12 +333,6 @@ def pollGateway(thing):
     if thing.thingClassId == gatewayThingClassId:
         logger.log("polling gateway", thing.name)
         deviceIp = thing.stateValue(gatewayUrlStateTypeId)
-        #pluginStorage().beginGroup(thing.id)
-        #username = pluginStorage().value("username")
-        #secret = pluginStorage().value("password")
-        #token = pluginStorage().value("token")
-        #tokentype = pluginStorage().value("tokentype")
-        #pluginStorage().endGroup()
         loginState, token, tokentype = checkToken(thing, deviceIp)
         if loginState == True:
             thing.setStateValue(gatewayLoggedInStateTypeId, True)
@@ -350,10 +348,6 @@ def pollGateway(thing):
         if parentGateway.stateValue(gatewayLoggedInStateTypeId) == True:
             #thing.setStateValue(deviceConnectedStateTypeId, True)
             deviceIp = parentGateway.stateValue(gatewayUrlStateTypeId)
-            #pluginStorage().beginGroup(parentGateway.id)
-            #token = pluginStorage().value("token")
-            #tokentype = pluginStorage().value("tokentype")
-            #pluginStorage().endGroup()
             loginState, token, tokentype = checkToken(parentGateway, deviceIp)
             if loginState == True:
                 thing.setStateValue(deviceConnectedStateTypeId, True)
@@ -375,14 +369,14 @@ def pollGateway(thing):
 
 def pollService():
     logger.log("pollService!!!")
-    # while polling: check if token still valid, if not: renew? or only as try/except?
-    for thing in myThings():
-        if thing.thingClassId == gatewayThingClassId or thing.thingClassId == deviceThingClassId:
-            pollGateway(thing)
     # restart the timer for next poll (if player is playing, increase poll frequency)
     global pollTimer
     pollTimer = threading.Timer(30, pollService)
     pollTimer.start()
+    # while polling: check if token still valid, if not: renew? or only as try/except?
+    for thing in myThings():
+        if thing.thingClassId == gatewayThingClassId or thing.thingClassId == deviceThingClassId:
+            pollGateway(thing)
 
 def executeAction(info):
     if info.thing.thingClassId == deviceThingClassId:
