@@ -125,6 +125,9 @@ def setupThing(info):
     if info.thing.thingClassId == gatewayThingClassId:
         searchSystemId = info.thing.paramValue(gatewayThingSystemIdParamTypeId)
         logger.log("setupThing called for", info.thing.name, searchSystemId)
+        global discoveredIps
+        discoveredIps = findIps()
+        logger.log("setupThing discoveredIps", discoveredIps)
         deviceIp = None
         for i in range(0, len(discoveredIps)):
             systemId = discoveredIps[i][2]
@@ -168,6 +171,9 @@ def setupThing(info):
 def discoverThings(info):
     if info.thingClassId == gatewayThingClassId:
         logger.log("Discovery started for", info.thingClassId)
+        global discoveredIps
+        discoveredIps = findIps()
+        logger.log("discoverThings discoveredIps", discoveredIps)
         for i in range(0, len(discoveredIps)):
             deviceIp = discoveredIps[i][0]
             deviceName = discoveredIps[i][1]
